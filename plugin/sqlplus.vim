@@ -155,7 +155,7 @@ function! AE_execLiteralQuery( sql_query )
 
   let l:idx = stridx( l:query, "\n" )
   while l:idx >= 0
-    let l:query = strpart( l:query, 0, l:idx ) . strpart( l:query, l:idx+1 )
+    let l:query = strpart( l:query, 0, l:idx ) . " " . strpart( l:query, l:idx+1 )
     let l:idx = stridx( l:query, "\n" )
   endwhile
 
