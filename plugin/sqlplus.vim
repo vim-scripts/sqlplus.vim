@@ -1,6 +1,6 @@
 " sqlplus.vim
 " author: Jamis Buck (jgb3@email.byu.edu)
-" version: 1.2.2
+" version: 1.2.3
 "
 " This file contains routines that may be used to execute SQL queries and describe
 " tables from within VIM.  It depends on SQL*Plus.  You must have $ORACLE_HOME
@@ -14,6 +14,7 @@
 "   <F9>: treat the identifier under the cursor as a table name, and do a 'describe'
 "         on it.
 "   <F10>: prompt for a table to describe.
+"   <F11>: set the current SQL*Plus username and password
 "   <Leader>sb: open an empty buffer in a new window to enter SQL commands in
 "   <Leader>ss: execute the (one-line) query on the current line
 "   <Leader>se: execute the query under the cursor (as <F8>)
@@ -36,9 +37,9 @@
 " of :SQL.  Unfortunately, :delete is already taken, so it could not be
 " remapped.
 "
-" If queries contain bind variables, you will be prompted to give a value for each
-" one.  if the value is a string, you must explicitly put quotes around it.  If the
-" query contains an INTO clause, it is removed before executing.
+" If queries contain bind variables, you will be prompted to give a value for
+" each one.  if the value is a string, you must explicitly put quotes around it.
+" If the query contains an INTO clause, it is removed before executing.
 "
 " You will be prompted for your user-name and password the first time you access
 " one of these functions during a session.  After that, your user-id and password
@@ -62,6 +63,12 @@
 "       <Leader>sc command.
 "   g:sqlplus_db -- the name of the database to connect to.  This variable
 "       may also be modified via the :DB command.
+"
+" ------------------------------------------------------------------------------
+" Thanks to:
+"   Matt Kunze (kunzem@optimiz.com) for getting this script to work under
+"     Windows
+" ------------------------------------------------------------------------------
 
 
 " Global variables (may be set in ~/.vimrc) {{{1
@@ -85,7 +92,11 @@ endif
 
 function! AE_getSQLPlusUIDandPasswd( force ) "{{{1
   if g:sqlplus_userid == "" || a:force != 0
-    let l:userid = substitute( system( "whoami" ), "\n", "", "g" )
+    if has("win32")
+      let l:userid = ''
+    else
+      let l:userid = substitute( system( "whoami" ), "\n", "", "g" )
+    endif
     let g:sqlplus_userid = input( "Please enter your SQL*Plus user-id:  ", l:userid )
     let g:sqlplus_passwd = inputsecret( "Please enter your SQL*Plus password:  " )
   endif
@@ -126,7 +137,7 @@ endfunction "}}}
 function! AE_execQuery( sql_query ) "{{{1
   call AE_getSQLPlusUIDandPasswd( 0 )
   new
-  let l:tmpfile = tempname()
+  let l:tmpfile = tempname() . ".sql"
   let l:oldo = @o
   let @o="i" . g:sqlplus_common_commands . a:sql_query
   let l:pos = match( @o, ";$" )
@@ -140,7 +151,7 @@ function! AE_execQuery( sql_query ) "{{{1
   close
   new
   let l:cmd = g:sqlplus_path . g:sqlplus_userid . "/" . g:sqlplus_passwd . "@" . g:sqlplus_db
-  let l:cmd = l:cmd . " < " . l:tmpfile
+  let l:cmd = l:cmd . " @" . l:tmpfile
   exe "1,$!" . l:cmd
   call AE_configureOutputWindow()
   call delete( l:tmpfile )
@@ -202,6 +213,7 @@ map <F8>  :call AE_execQueryUnderCursor()<CR>
 map <Leader><F8> :call AE_promptQuery()<CR>
 map <F9>  :call AE_describeTableUnderCursor()<CR>
 map <F10> :call AE_describeTablePrompt()<CR>
+map <F11> :call AE_getSQLPlusUIDandPasswd(1)<CR>
 "}}}
 
 " visual mode mappings {{{1
