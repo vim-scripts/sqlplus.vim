@@ -1,5 +1,6 @@
 " sqlplus.vim
 " author: Jamis Buck (jgb3@email.byu.edu)
+" version: 1.2.2
 "
 " This file contains routines that may be used to execute SQL queries and describe
 " tables from within VIM.  It depends on SQL*Plus.  You must have $ORACLE_HOME
@@ -29,6 +30,11 @@
 "
 " In visual mode:
 "   <F8>: execute the selected query
+"
+" Command mode abbreviations also exist, so you can use :select instead of
+" :Select, :update instead of :Update, :db instead of :DB, and :sql instead
+" of :SQL.  Unfortunately, :delete is already taken, so it could not be
+" remapped.
 "
 " If queries contain bind variables, you will be prompted to give a value for each
 " one.  if the value is a string, you must explicitly put quotes around it.  If the
@@ -77,15 +83,15 @@ if !exists( "g:sqlplus_db" )
 endif
 "}}}
 
-function! AE_getSQLPlusUIDandPasswd( force )
+function! AE_getSQLPlusUIDandPasswd( force ) "{{{1
   if g:sqlplus_userid == "" || a:force != 0
     let l:userid = substitute( system( "whoami" ), "\n", "", "g" )
     let g:sqlplus_userid = input( "Please enter your SQL*Plus user-id:  ", l:userid )
     let g:sqlplus_passwd = inputsecret( "Please enter your SQL*Plus password:  " )
   endif
-endfunction
+endfunction "}}}
 
-function! AE_configureOutputWindow()
+function! AE_configureOutputWindow() "{{{1
   set ts=8 buftype=nofile nowrap sidescroll=5 listchars+=precedes:<,extends:>
   normal $G
   while getline(".") == ""
@@ -96,28 +102,28 @@ function! AE_configureOutputWindow()
   if l:newheight < winheight(0)
     exe "resize " . l:newheight
   endif
-endfunction
+endfunction "}}}
 
-function! AE_configureSqlBuffer()
+function! AE_configureSqlBuffer() "{{{1
   set syn=sql
-endfunction
+endfunction "}}}
 
-function! AE_describeTable( tableName )
+function! AE_describeTable( tableName ) "{{{1
   let l:cmd = "prompt DESCRIBING TABLE '" . a:tableName . "'\ndesc " . a:tableName
   call AE_execQuery( l:cmd )
-endfunction
+endfunction "}}}
 
-function! AE_describeTableUnderCursor()
+function! AE_describeTableUnderCursor() "{{{1
   normal viw"zy
   call AE_describeTable( @z )
-endfunction
+endfunction "}}}
 
-function! AE_describeTablePrompt()
+function! AE_describeTablePrompt() "{{{1
   let l:tablename = input( "Please enter the name of the table to describe:  " )
   call AE_describeTable( l:tablename )
-endfunction
+endfunction "}}}
 
-function! AE_execQuery( sql_query )
+function! AE_execQuery( sql_query ) "{{{1
   call AE_getSQLPlusUIDandPasswd( 0 )
   new
   let l:tmpfile = tempname()
@@ -138,19 +144,19 @@ function! AE_execQuery( sql_query )
   exe "1,$!" . l:cmd
   call AE_configureOutputWindow()
   call delete( l:tmpfile )
-endfunction
+endfunction "}}}
 
-function! AE_promptQuery()
+function! AE_promptQuery() "{{{1
   let l:sqlquery = input( "SQL Query: " )
   call AE_execQuery( l:sqlquery )
-endfunction
+endfunction "}}}
 
-function! AE_resetPassword()
+function! AE_resetPassword() "{{{1
   let g:sqlplus_userid = ""
   let g:sqlplus_passwd = ""
-endfunction
+endfunction "}}}
 
-function! AE_execLiteralQuery( sql_query )
+function! AE_execLiteralQuery( sql_query ) "{{{1
   let l:query = substitute( a:sql_query, '\c\<INTO\>.*\<FROM\>', 'FROM', 'g' )
 
   let l:idx = stridx( l:query, "\n" )
@@ -167,24 +173,25 @@ function! AE_execLiteralQuery( sql_query )
   endwhile
 
   call AE_execQuery( l:query )
-endfunction
+endfunction "}}}
 
-function! AE_execQueryUnderCursor()
+function! AE_execQueryUnderCursor() "{{{1
   exe "silent norm! ?\\c[^.]*\\<\\(select\\|update\\|delete\\)\\>\nv/;\nh\"zy"
   noh
   call AE_execLiteralQuery( @z )
-endfunction
+endfunction "}}}
 
-function! AE_openSqlBuffer( fname )
+function! AE_openSqlBuffer( fname ) "{{{1
   exe "new " . a:fname
   call AE_configureSqlBuffer()
-endfunction
+endfunction "}}}
 
-function! AE_openEmptySqlBuffer()
+function! AE_openEmptySqlBuffer() "{{{1
   call AE_openSqlBuffer( "" )
-endfunction
+endfunction "}}}
 
 
+" command-mode mappings {{{1
 map <Leader>sb   :call AE_openEmptySqlBuffer()<CR>
 map <Leader>ss   "zyy:call AE_execLiteralQuery( @z )<CR>
 map <Leader>se   :call AE_execQueryUnderCursor()<CR>
@@ -195,12 +202,21 @@ map <F8>  :call AE_execQueryUnderCursor()<CR>
 map <Leader><F8> :call AE_promptQuery()<CR>
 map <F9>  :call AE_describeTableUnderCursor()<CR>
 map <F10> :call AE_describeTablePrompt()<CR>
+"}}}
 
+" visual mode mappings {{{1
 vmap <F8> "zy:call AE_execLiteralQuery( @z )<CR>
+"}}}
 
+" commands {{{1
 command! -nargs=+ Select :call AE_execQuery( "select <a>" )
 command! -nargs=+ Update :call AE_execQuery( "update <a>" )
 command! -nargs=+ Delete :call AE_execQuery( "delete <a>" )
 command! -nargs=1 DB     :let  g:sqlplus_db="<args>"
 command! -nargs=? SQL    :call AE_openSqlBuffer( "<args>" )
 
+cabbrev select Select
+cabbrev update Update
+cabbrev db     DB
+cabbrev sql    SQL
+"}}}
