@@ -20,15 +20,19 @@
 "   <F8>: execute the selected query
 "
 " If queries contain bind variables, you will be prompted to give a value for each
-" one.  if the value is a string, you must explicitly put quotes around it.
+" one.  if the value is a string, you must explicitly put quotes around it.  If the
+" query contains an INTO clause, it is removed before executing.
 "
 " You will be prompted for your user-name and password the first time you access
 " one of these functions during a session.  After that, your user-id and password
 " will be remembered until the session ends.
+"
+" The results of the query/command are displayed in a separate window.
 
 let s:sqlplus_userid = ""
 let s:sqlplus_passwd = ""
 let s:sqlplus_path   = $ORACLE_HOME . "/bin/sqlplus -s "
+let s:sqlplus_common_commands = "set pagesize 10000\nset wrap off\nset linesize 9999\n"
 
 let g:sqlplus_db     = $ORACLE_SID
 
@@ -73,7 +77,7 @@ function! AE_execQuery( sql_query )
   new
   let l:tmpfile = tempname()
   let l:oldo = @o
-  let @o="i" . a:sql_query . ";\n"
+  let @o="i" . s:sqlplus_common_commands . a:sql_query . ";\n"
   normal @o
   let @o=l:oldo
   exe "silent write " . l:tmpfile
