@@ -1,0 +1,9 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=97
+
+Jamis Buck no longer maintains this script. Dani Rey is the new maintainer. Alas, the vim.org system is not configured to allow project owners to change, and the vim.org maintainers are silent when help requests are sent, so we're doing this the hard way.
+
+If you want to use sqlplus.vim, please go grab Dani Rey's version, here:
+
+  http://www.vim.org/scripts/script.php?script_id=2821
+
+Enjoy!
